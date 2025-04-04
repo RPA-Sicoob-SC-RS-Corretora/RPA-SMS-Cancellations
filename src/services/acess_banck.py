@@ -2,10 +2,8 @@ import os
 import pyodbc
 from dotenv import load_dotenv
 
-# Carregar variáveis de ambiente
 load_dotenv()
 
-# Obter informações do banco de dados
 DB_CONFIG = {
     "host": os.getenv("HOST"),
     "port": os.getenv("PORT"),
@@ -15,12 +13,13 @@ DB_CONFIG = {
 }
 
 def conectar_ao_banco():
+    """
+    Conecta ao banco de dados e retorna a conexão.
+    """
     try:
-        # Verificar se todas as variáveis de ambiente estão definidas
         if not all(DB_CONFIG.values()):
             raise ValueError("Uma ou mais variáveis de ambiente do banco de dados não estão definidas.")
         
-        # Configurar a string de conexão
         conn_str = (
             f"DRIVER={{ODBC Driver 18 for SQL Server}};"
             f"SERVER={DB_CONFIG['host']},{DB_CONFIG['port']};"
@@ -37,9 +36,15 @@ def conectar_ao_banco():
         return None
 
 def criar_query_listar_tabelas():
+    """
+    Retorna uma query para listar tabelas do banco.
+    """
     return "SELECT name FROM sys.tables;"
 
 def executar_query(conn, query):
+    """
+    Executa uma query SQL e retorna cabeçalhos e resultados.
+    """
     cursor = conn.cursor()
     cursor.execute(query)
     colunas = [desc[0] for desc in cursor.description]

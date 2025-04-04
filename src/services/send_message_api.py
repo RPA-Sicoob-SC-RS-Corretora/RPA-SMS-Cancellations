@@ -1,25 +1,16 @@
 import json
 import requests as api
-import os
 import urllib3
-import re
+from tqdm import tqdm
 from src.variables import VARIABLES
 
-# Suprimir avisos de InsecureRequestWarning
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def send_message_api(phone_number: str, message: str) -> api.Response:
     """
-    Sends a message to a phone number using the API.
-
-    :param phone_number: The phone number to send the message to.
-    :type phone_number: str
-    :param message: The message to be sent.
-    :type message: str
-    :return: The response from the API.
-    :rtype: api.Response
+    Envia uma mensagem SMS para o número informado.
     """
-    url = VARIABLES["URL"]  # URL da API
+    url = VARIABLES["URL"]
     headers = {
         "content-type": "application/json",
         "auth-key": VARIABLES["AUTH_KEY"],
@@ -29,14 +20,8 @@ def send_message_api(phone_number: str, message: str) -> api.Response:
         "Content": message
     }
 
-    # Log do payload
-    print(f"Enviando payload: {json.dumps(payload)}")
-
     try:
-        # Enviar a requisição POST
         response = api.post(url, data=json.dumps(payload), headers=headers, verify=False)
-        # Log detalhado da resposta
-        print(f"Resposta da API: {response.status_code} - {response.text}")
         return response
     except Exception as e:
         print(f"Erro ao enviar mensagem: {e}")
@@ -44,11 +29,7 @@ def send_message_api(phone_number: str, message: str) -> api.Response:
 
 def validar_parametros_envio(telefone: str, mensagem: str) -> bool:
     """
-    Valida os parâmetros de envio para garantir que não estejam vazios ou inválidos.
-
-    :param telefone: Número de telefone a ser validado.
-    :param mensagem: Mensagem a ser validada.
-    :return: True se os parâmetros forem válidos, False caso contrário.
+    Valida o telefone e a mensagem antes do envio.
     """
     if not telefone or telefone.strip() == "":
         print(f"Erro: Telefone inválido. Telefone: {telefone}")
@@ -60,22 +41,29 @@ def validar_parametros_envio(telefone: str, mensagem: str) -> bool:
 
 def enviar_mensagens(result_df):
     """
-    Envia mensagens para os números de telefone presentes no DataFrame.
-
-    :param result_df: DataFrame contendo as colunas 'Telefone Celular' e 'Mensagem'.
+    Envia mensagens SMS para os números no DataFrame.
     """
-    for _, row in result_df.iterrows():
+    if "Produto" not in result_df.columns:
+        raise KeyError("A coluna 'Produto' não foi encontrada no DataFrame.")
+
+    total_mensagens = len(result_df)
+    print(f"Iniciando o envio de {total_mensagens} mensagens SMS...")
+
+    for _, row in tqdm(result_df.iterrows(), total=total_mensagens, desc="Enviando SMS"):
         telefone = row['Telefone Celular']
         mensagem = row['Mensagem']
+        produto = row['Produto']
 
-        # Validar os parâmetros antes de enviar
+        if isinstance(mensagem, str) and "!prd!" in mensagem:
+            mensagem = mensagem.replace("!prd!", str(produto))
+
         if not validar_parametros_envio(telefone, mensagem):
             continue
 
         response = send_message_api(telefone, mensagem)
         if response is None:
             print(f"Erro ao enviar mensagem para {telefone}: Resposta da API é None.")
-        elif response.status_code == 200:
-            print(f"Mensagem enviada com sucesso para {telefone}.")
-        else:
+        elif response.status_code != 200:
             print(f"Erro ao enviar mensagem para {telefone}: {response.status_code} - {response.text}")
+
+    print("Envio de mensagens concluído com sucesso!")

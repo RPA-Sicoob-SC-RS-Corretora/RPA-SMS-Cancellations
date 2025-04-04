@@ -7,44 +7,39 @@ import pyodbc
 
 def organizar_dados(cabecalhos, resultados):
     """
-    Organiza os dados retornados de uma consulta SQL em um DataFrame.
-
-    :param cabecalhos: Lista de cabeçalhos das colunas.
-    :param resultados: Lista de resultados retornados pela consulta.
-    :return: DataFrame organizado ou vazio em caso de erro.
+    Organiza os resultados de uma query em um DataFrame.
     """
     if not resultados:
-        print("Erro: Nenhum resultado encontrado para a consulta.")
         return pd.DataFrame()
 
-    # Converter resultados de pyodbc.Row para lista de listas, se necessário
     if isinstance(resultados[0], tuple) or isinstance(resultados[0], pyodbc.Row):
-        print("Convertendo resultados de pyodbc.Row para lista de listas...")
         resultados = [list(row) for row in resultados]
 
-    # Validar se o número de colunas nos resultados corresponde ao número de cabeçalhos
     if any(len(linha) != len(cabecalhos) for linha in resultados):
-        print(f"Erro: Número de colunas nos resultados não corresponde ao número de cabeçalhos.")
-        print(f"Esperado: {len(cabecalhos)} colunas, Encontrado: {set(len(linha) for linha in resultados)} colunas.")
         return pd.DataFrame()
 
     try:
-        # Criar o DataFrame
         df = pd.DataFrame(resultados, columns=cabecalhos)
-        if df.empty:
-            print("Erro: DataFrame criado está vazio.")
         return df
     except Exception as e:
-        print(f"Erro ao criar DataFrame: {e}")
         return pd.DataFrame()
 
 def exibir_dados_em_tabela(df):
+    """
+    Exibe o DataFrame em formato de tabela.
+    """
     return tabulate(df, headers="keys", tablefmt="pipe")
 
 def salvar_dados_em_csv(df, filepath):
+    """
+    Salva o DataFrame em um arquivo CSV.
+    """
     df.to_csv(filepath, index=False)
 
 def formatar_cpf_cnpj(valor):
+    """
+    Formata um CPF ou CNPJ para o padrão correto.
+    """
     valor = re.sub(r"\D", "", valor)
     if len(valor) == 11:
         return f"{valor[:3]}.{valor[3:6]}.{valor[6:9]}-{valor[9:]}"
@@ -53,9 +48,15 @@ def formatar_cpf_cnpj(valor):
     return valor
 
 def formatar_telefone(telefone):
+    """
+    Remove caracteres não numéricos de um telefone.
+    """
     return re.sub(r"[^\d]", "", telefone)
 
 def limpar_coluna_telefone(df):
+    """
+    Limpa e formata a coluna 'Telefone Celular' no DataFrame.
+    """
     if "Telefone Celular" in df.columns:
         df["Telefone Celular"] = df["Telefone Celular"].astype(str).apply(formatar_telefone)
     else:
@@ -63,6 +64,11 @@ def limpar_coluna_telefone(df):
     return df
 
 def merge_dataframes(df1, df2):
+    """
+    Mescla dois DataFrames com base no CPF/CNPJ.
+    """
+    df1 = df1.drop_duplicates()
+
     df1["Cpf_cnpj"] = df1["Cpf_cnpj"].astype(str).apply(formatar_cpf_cnpj)
     df2["CPF/CNPJ"] = df2["CPF/CNPJ"].astype(str).apply(formatar_cpf_cnpj)
     merged_df = pd.merge(df1, df2[["CPF/CNPJ", "Telefone Celular"]], left_on="Cpf_cnpj", right_on="CPF/CNPJ", how="left")
@@ -70,6 +76,9 @@ def merge_dataframes(df1, df2):
     return df1
 
 def adicionar_mensagem_por_en2(df):
+    """
+    Adiciona mensagens ao DataFrame com base na coluna 'EN2'.
+    """
     mensagens = {
         "3067 SICOOB CREDIAUC": VARIABLES["MESSAGE_CREDIAUC"],
         "3258 SICOOB CREDISC": VARIABLES["MESSAGE_CREDISC"]
@@ -78,26 +87,32 @@ def adicionar_mensagem_por_en2(df):
     return df
 
 def salvar_dataframe(df, file_path, filename):
+    """
+    Salva o DataFrame em um arquivo CSV no caminho especificado.
+    """
     filepath = os.path.join(file_path, filename)
     df.to_csv(filepath, index=False)
 
 def separar_por_en2(df, file_path):
     """
-    Separa o DataFrame em arquivos CSV com base nos valores únicos da coluna EN2.
-
-    :param df: DataFrame contendo a coluna EN2.
-    :param file_path: Diretório base onde os arquivos separados serão salvos.
+    Separa o DataFrame em arquivos CSV por valores únicos da coluna 'EN2'.
     """
     if "EN2" not in df.columns:
         raise KeyError("A coluna 'EN2' não foi encontrada no DataFrame.")
+    if "Mensagem" not in df.columns:
+        raise KeyError("A coluna 'Mensagem' não foi encontrada no DataFrame.")
 
-    os.makedirs(file_path, exist_ok=True)  # Garantir que o diretório de saída exista
+    os.makedirs(file_path, exist_ok=True)
+
+    colunas_relevantes = [
+        "Familia", "EN3", "TipoProposta", "Cpf_cnpj", 
+        "Seguradora", "Numero_apolice_certificado", "Mensagem"
+    ]
 
     valores_unicos = df["EN2"].unique()
     for valor in valores_unicos:
         df_filtrado = df[df["EN2"] == valor]
-        filename = f"{valor.replace(' ', '_').replace('/', '_')}.csv"  # Alterado para salvar como CSV
+        df_filtrado = df_filtrado[colunas_relevantes]
+        filename = f"{valor.replace(' ', '_').replace('/', '_')}.csv"
         filepath = os.path.join(file_path, filename)
-        df_filtrado.to_csv(filepath, index=False)  # Salvar como CSV
-        print(f"Arquivo salvo: {filepath}")
-
+        df_filtrado.to_csv(filepath, index=False, sep=';')
