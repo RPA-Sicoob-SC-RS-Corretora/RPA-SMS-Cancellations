@@ -45,6 +45,10 @@ def main():
                     if 'Telefone Celular' in result_df.columns:
                         result_df = limpar_coluna_telefone(result_df)
                         result_df = adicionar_mensagem_por_en2(result_df)
+                        
+                        # Filtrar o DataFrame pela data antes de enviar mensagens
+                        result_df = filter_date_by_en2(result_df)
+                        
                         enviar_mensagens(result_df)
                         separar_por_en2(result_df, VARIABLES["FILE_PATH"])
                         mail_config = MailConfig()

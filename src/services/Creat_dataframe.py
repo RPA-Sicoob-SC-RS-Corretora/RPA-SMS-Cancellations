@@ -4,6 +4,7 @@ from src.variables import VARIABLES
 import os
 import re
 import pyodbc
+import datetime
 
 def organizar_dados(cabecalhos, resultados):
     """
@@ -85,6 +86,7 @@ def adicionar_mensagem_por_en2(df):
     }
     df["Mensagem"] = df["EN2"].map(mensagens).fillna("Mensagem não definida")
     return df
+    
 
 def salvar_dataframe(df, file_path, filename):
     """
@@ -105,7 +107,7 @@ def separar_por_en2(df, file_path):
     os.makedirs(file_path, exist_ok=True)
 
     colunas_relevantes = [
-        "Familia", "EN3", "TipoProposta", "Cpf_cnpj", 
+        "Familia", "EN3", "TipoProposta", "dt_emissao", "Cpf_cnpj", 
         "Seguradora", "Numero_apolice_certificado", "Mensagem"
     ]
 
@@ -116,3 +118,38 @@ def separar_por_en2(df, file_path):
         filename = f"{valor.replace(' ', '_').replace('/', '_')}.csv"
         filepath = os.path.join(file_path, filename)
         df_filtrado.to_csv(filepath, index=False, sep=';')
+
+def filter_date_by_en2(df):
+    """
+    Filtra o DataFrame pela coluna 'dt_emissao' com base no valor de 'EN2'.
+    3067 SICOOB CREDIAUC: 4 dias para trás
+    3258 SICOOB CREDISC: 7 dias para trás
+    """
+    current_date = datetime.date.today()
+    
+    if 'dt_emissao' not in df.columns:
+        print("Coluna 'dt_emissao' não encontrada no DataFrame")
+        return df
+    
+    
+    df['dt_emissao'] = pd.to_datetime(df['dt_emissao'], errors='coerce')
+    
+  
+    filtered_df = pd.DataFrame()
+
+    for en2_value in df['EN2'].unique():
+        df_subset = df[df['EN2'] == en2_value].copy()
+        
+        if en2_value == "3067 SICOOB CREDIAUC":
+            date_threshold = current_date - datetime.timedelta(days=4)
+            df_subset = df_subset[df_subset['dt_emissao'].dt.date >= date_threshold]
+            
+        elif en2_value == "3258 SICOOB CREDISC":
+            date_threshold = current_date - datetime.timedelta(days=7)
+            df_subset = df_subset[df_subset['dt_emissao'].dt.date >= date_threshold]
+            
+        filtered_df = pd.concat([filtered_df, df_subset])
+    
+    print(f"DataFrame antes de filtrar por data: {len(df)} linhas")
+    print(f"DataFrame após filtrar por data: {len(filtered_df)} linhas")
+    return filtered_df
