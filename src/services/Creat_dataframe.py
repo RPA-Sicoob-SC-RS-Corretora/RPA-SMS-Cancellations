@@ -97,7 +97,7 @@ def salvar_dataframe(df, file_path, filename):
 
 def separar_por_en2(df, file_path):
     """
-    Separa o DataFrame em arquivos CSV por valores únicos da coluna 'EN2'.
+    Separa o DataFrame em arquivos CSV por valores únicos da coluna 'EN2' usando codificação UTF-8.
     """
     if "EN2" not in df.columns:
         raise KeyError("A coluna 'EN2' não foi encontrada no DataFrame.")
@@ -117,13 +117,13 @@ def separar_por_en2(df, file_path):
         df_filtrado = df_filtrado[colunas_relevantes]
         filename = f"{valor.replace(' ', '_').replace('/', '_')}.csv"
         filepath = os.path.join(file_path, filename)
-        df_filtrado.to_csv(filepath, index=False, sep=';')
+        df_filtrado.to_csv(filepath, index=False, sep=';', encoding='utf-8')
 
 def filter_date_by_en2(df):
     """
     Filtra o DataFrame pela coluna 'dt_emissao' com base no valor de 'EN2'.
-    3067 SICOOB CREDIAUC: 4 dias para trás
-    3258 SICOOB CREDISC: 7 dias para trás
+    3067 SICOOB CREDIAUC: 5 dias para trás
+    3258 SICOOB CREDISC: 8 dias para trás
     """
     current_date = datetime.date.today()
     
@@ -141,11 +141,11 @@ def filter_date_by_en2(df):
         df_subset = df[df['EN2'] == en2_value].copy()
         
         if en2_value == "3067 SICOOB CREDIAUC":
-            date_threshold = current_date - datetime.timedelta(days=4)
+            date_threshold = current_date - datetime.timedelta(days=5)
             df_subset = df_subset[df_subset['dt_emissao'].dt.date >= date_threshold]
             
         elif en2_value == "3258 SICOOB CREDISC":
-            date_threshold = current_date - datetime.timedelta(days=7)
+            date_threshold = current_date - datetime.timedelta(days=8)
             df_subset = df_subset[df_subset['dt_emissao'].dt.date >= date_threshold]
             
         filtered_df = pd.concat([filtered_df, df_subset])
