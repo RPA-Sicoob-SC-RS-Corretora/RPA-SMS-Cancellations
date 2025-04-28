@@ -27,17 +27,15 @@ class MailConfig:
                         <p>Encaminho em anexo o relatório de monitoramento referente aos envios de SMS dos associados que tiveram o seguro Cancelado. O documento detalha os associados que foram notificados e aqueles que ainda não receberam a comunicação.</p>
                         <p></p>
                         <p>Em caso de dúvidas entrar em contato com <a href="mailto:pendencias@segurosicoob.com.br" data-linkindex="0">pendencias@segurosicoob.com.br</a></p>
-                        <p><i>*essa é uma mensagem automática, favor não responder<i></p>
-                        <p></p>
-                        <h2>Gestão de Parcelas</h2>
-                        <p>Sicoob Corretora SC/RS</p>
-                        <p></p>
-                        <p>R. Tenente Silveira, 94 - 7º andar</p>
-                        <p>88010-300 | Florianópolis - SC</p>\
-                        <p><strong>T 48 3085-9200 |</strong> <a href="https://sicoobsc.com.br">sicoobsc.com.br</a></p>
-                    </div>
-                </body>
-            </html>
+                        <p><i>*Essa é uma mensagem automática, favor não responder.</i></p>
+                        <p><b>RPA</b><br>
+                        Sicoob Corretora SC/RS<br>
+                        <img src="cid:logo"><br>
+                        R. Tenente Silveira, 94 - 7º andar<br>
+                        88010-300 | Florianópolis - SC<br>
+                        <b>T 48 3085-9270</b> | <a href="https://sicoobsc.com.br">sicoobsc.com.br</a></p>
+                    </body>
+                </html>
         """
 
     @property

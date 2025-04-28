@@ -41,15 +41,19 @@ def validar_parametros_envio(telefone: str, mensagem: str) -> bool:
 
 def enviar_mensagens(result_df):
     """
-    Envia mensagens SMS para os números no DataFrame.
+    Envia mensagens SMS para os números no DataFrame e atualiza as colunas 'Mensagem' e 'Status_Envio'.
     """
     if "Produto" not in result_df.columns:
         raise KeyError("A coluna 'Produto' não foi encontrada no DataFrame.")
+    if "Mensagem" not in result_df.columns:
+        raise KeyError("A coluna 'Mensagem' não foi encontrada no DataFrame.")
+    if "Status_Envio" not in result_df.columns:
+        raise KeyError("A coluna 'Status_Envio' não foi encontrada no DataFrame.")
 
     total_mensagens = len(result_df)
     print(f"Iniciando o envio de {total_mensagens} mensagens SMS...")
 
-    for _, row in tqdm(result_df.iterrows(), total=total_mensagens, desc="Enviando SMS"):
+    for idx, row in tqdm(result_df.iterrows(), total=total_mensagens, desc="Enviando SMS"):
         telefone = row['Telefone Celular']
         mensagem = row['Mensagem']
         produto = row['Produto']
@@ -58,12 +62,22 @@ def enviar_mensagens(result_df):
             mensagem = mensagem.replace("!prd!", str(produto))
 
         if not validar_parametros_envio(telefone, mensagem):
+            result_df.at[idx, 'Mensagem'] = "Erro: telefone inválido"
+            result_df.at[idx, 'Status_Envio'] = "Erro: Telefone inválido"
             continue
 
         response = send_message_api(telefone, mensagem)
         if response is None:
             print(f"Erro ao enviar mensagem para {telefone}: Resposta da API é None.")
+            result_df.at[idx, 'Mensagem'] = "Erro: Resposta da API é None"
+            result_df.at[idx, 'Status_Envio'] = "Erro: Resposta da API é None"
         elif response.status_code != 200:
             print(f"Erro ao enviar mensagem para {telefone}: {response.status_code} - {response.text}")
+            result_df.at[idx, 'Mensagem'] = f"Erro: {response.status_code} - {response.text}"
+            result_df.at[idx, 'Status_Envio'] = f"Erro: {response.status_code}"
+        else:
+            result_df.at[idx, 'Mensagem'] = mensagem  # Salva a mensagem enviada
+            result_df.at[idx, 'Status_Envio'] = "Enviado com sucesso"
 
     print("Envio de mensagens concluído com sucesso!")
+    return result_df
